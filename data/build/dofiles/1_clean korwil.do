@@ -17,7 +17,8 @@
 			}
 	
 	* 
-	if (inlist("${suser}","........")) {
+	if (inlist("${suser}","J-PAL SEA")) {
+			gl github "C:\Users\J-PAL SEA\Documents\GitHub\jagakpk\data"
 			
 			}	
 
@@ -71,12 +72,45 @@ replace nama_kabkot = "Kab. Maluku Tenggara Barat"	if nama_kabkot == "Kab. Kepul
 
 
 //	drop province level observation 
-//	menariknya, ada yang data provinsinya ada, tapi gaada kabkotnya (e.g DKI jakarta, Bali, gorontalo,etc)
+//	menariknya, ada yang data provinsinya ada, tapi gaada kabkotnya (e.g DKI jakarta, Bali, gorontalo,etc) 
+// ^^ Dengan mengecek jumlah observasi for each province (by provinsi_name: gen n=_N), aku menemukan bahwa hanya DKI JKT yg ada provinsi tp gk ada kabkot
 drop if strpos(nama_kabkot, "Provinsi") > 0
 
 //Task 2 - Merge the data with the crosswalk dataset to get the BPS code
 merge m:1 nama_kabkot using "$raw/district-crosswalk.dta", nogen keep(matched)
 unique nama_kabkot //total kabupaten = 506. ??? kalo info dari kak hap harusnya ada 508
 * note for oji, minta tolong cek lagi ji, takutnya ada kabupaten yang ngga sengaja ke drop?
+* ^^ jumlah kabkot: crosswalk = 514, Korwil = 506,  jendela pencegahan = 508. 
 
 //Task 3 - Change the unit of analysis to district and keep only relevant variables
+* Checking the relevant variables
+ds provinsi_name nama_kabkot dana_desa area_intervensi indikator sub_indikator tgl_lapor tgl_verif rk kode_prov nama_prov kode_kabkot, not
+foreach i in `r(varlist)' {
+	destring `i', replace
+	}
+gen cek_nilaisubindikator=bobot_subindikator*nilai_verifikasi/100 //The result is in pct
+gen cek_nilaiindikator=(bobot_indikator/100)*(cek_nilaisubindikator) //The result is in pct
+gen cek_areaintervensi=(bobot_area_intervensi/100)*(cek_nilaiindikator) //The result is in pct
+
+drop cek_*
+
+*gen var for govt checked area_intervensi 
+gen govt_nilaisubindikator=bobot_subindikator*nilai/100 //The result is in pct
+gen govt_nilaiindikator=(bobot_indikator/100)*(govt_nilaisubindikator) //The result is in pct
+gen govt_areaintervensi=(bobot_area_intervensi/100)*(govt_nilaiindikator) //The result is in pct
+
+* mean of all relevant variables
+sort nama_kabkot
+foreach i in nilai_subindikator nilai_indikator nilai_area nilai nilai_verifikasi govt_nilaisubindikator govt_nilaiindikator govt_areaintervensi {
+	by nama_kabkot: egen mean_`i'=mean(`i')
+	}
+	
+* summation of nilai area intervensi
+foreach i in nilai_area govt_areaintervensi {
+	by nama_kabkot: egen sum_`i'=sum(`i')
+	}
+
+duplicates drop nama_kabkot, force
+drop dana_desa area_intervensi bobot_area_intervensi indikator bobot_indikator ///
+	sub_indikator bobot_subindikator nilai nilai_verifikasi tgl_lapor tgl_verif rk nilai_subindikator nilai_indikator ///
+	nilai_area govt_nilaisubindikator govt_nilaiindikator govt_areaintervensi
