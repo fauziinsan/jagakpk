@@ -25,23 +25,29 @@ gl inpath "$github/build/input"
 gl outpath "$github/build/output"
 
 
-
-
 ** fuzzy matching **
 use "$inpath/KorWil_matched_cleaned.dta", clear
 gen idnum=_n
 
 preserve
-	use "$inpath/Merge unsanitize lama sekolah, garis kemiskinan, kedalaman, keparahan kemiskinan.dta", clear
+	use "$inpath/district_chars.dta", clear
 	gen idnum1=_n
 	// different name 
 	replace daerah = "Kab. Banyuasin" 			if daerah == "Banyu Asin"
-	replace daerah = "Kab. Musi Banyuasin" 			if daerah == "Musi Banyuasin"
+	replace daerah = "Kab. Musi Banyuasin" 		if daerah == "Musi Banyuasin"
 	replace daerah = "Kab. Kotabaru" 			if daerah == "Kota Baru"
 	replace daerah = "Kab. Nagakeo" 			if daerah == "Nagekeo"
-	replace daerah = "Kab. Tulang Bawang" 			if daerah == "Tulangbawang"
+	replace daerah = "Kab. Tulang Bawang" 		if daerah == "Tulangbawang"
 	replace daerah = "Kab. Banyumas" 			if daerah == "Banyumas"
-	replace daerah = "Kab. Nduga" 			if daerah == "Nduga *"
+	replace daerah = "Kab. Nduga" 				if daerah == "Nduga *"
+	replace daerah = "Kab. Karang Asem"			if daerah == "Karangasem"
+	replace daerah = "Kab. Kepulauan Morotai" 	if daerah == "Pulau Morotai"
+	replace daerah = "Kab. Mahakam Ulu"			if daerah == "Mahakam Ulu"
+	replace daerah = "Kab. Mempawah"			if daerah == "Pontianak"
+	replace daerah = "Kab. Pangkajene Kepulauan" if daerah == "Pangkajene dan Kepulauan"
+	replace daerah = "Kota Makassar"			if daerah == "Kab. Makasar"
+	replace daerah = "Kab. Pasangkayu"			if daerah == "Mamuju Utara"
+	
 	tempfile tmp1 
 	sa `tmp1'
 restore 
@@ -60,18 +66,16 @@ restore
 	tempfile tmp2
 	sa `tmp2'
 
-merge 1:m nama_kabkot using  "$inpath/KorWil_matched_cleaned.dta"
+merge 1:m nama_kabkot using  "$inpath/KorWil_matched_cleaned.dta", nogen
+merge m:1 daerah using "`tmp1'", nogen keep(matched)
 
-merge m:1 daerah using "$inpath/Merge unsanitize lama sekolah, garis kemiskinan, kedalaman, keparahan kemiskinan.dta", gen(merge2)
-
-keep if merge2==3
 
 *keep only relevant vars 
-keep nama_kabkot area_intervensi nama_prov median_nilai-gap_mean lama_sekolah-indeks_kedalaman_miskin
+keep nama_kabkot nama_prov median_nilai-gap_mean poverty_rate-indeks_kedalaman_miskin
 
 
-
-
+*	change numeric variables as numeric
+destring poverty_rate-indeks_kedalaman_miskin, replace
 
 *save dataset
-save "$outpath/cleaned-jaga-foranalysis", replace
+save "$outpath/cleaned-jaga-districtlevel-foranalysis", replace

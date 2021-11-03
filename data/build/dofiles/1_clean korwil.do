@@ -25,6 +25,8 @@
 
 **	Globals
 gl raw "$github/build/raw"
+gl inpath "$github/build/input"
+gl outpath "$github/build/output"
 
 //Task 1 - Clean the district name
 *	import the data
@@ -116,15 +118,24 @@ foreach i in nilai_area govt_areaintervensi {
 	by nama_kabkot: egen sum_`i'=sum(`i')
 	}
 
+//  Create the outcome variable
+g gap_median = median_nilai_verifikasi < median_nilai
+g gap_mean 	 = mean_nilai_verifikasi < mean_nilai
+
+//	Keep only relevant variables
+order nama_prov kode_prov nama_kabkot kode_kabkot, first
+keep nama* kode* area_intervensi indikator sub_indikator nilai nilai_verifikasi mean_nilai_verifikasi ///
+	 mean_nilai median_nilai_verifikasi median_nilai gap*
+
+**	Save subindicator level dataset for desc analysis
+preserve
+	drop median* mean*
+	g gap = nilai_verifikasi < nilai
+	save "$outpath/cleaned-jaga-subindicatorlevel-foranalysis", replace
+restore
+
+**	Save district level dataset for further data merging
 duplicates drop nama_kabkot, force
-drop dana_desa  bobot_area_intervensi indikator bobot_indikator ///
-	sub_indikator bobot_subindikator nilai nilai_verifikasi tgl_lapor tgl_verif rk nilai_subindikator nilai_indikator ///
-	nilai_area govt_nilaisubindikator govt_nilaiindikator govt_areaintervensi
+drop indikator sub_indikator  nilai nilai_verifikasi area_intervensi
+save "$inpath/KorWil_matched_cleaned", replace
 
-* gen dummy target var
-gen gap_median=1 if median_nilai > median_nilai_verifikasi
-replace gap_median=0 if gap_median==.
-gen gap_mean=1 if mean_nilai > mean_nilai_verifikasi
-replace gap_mean=0 if gap_mean==.
-
-keep nama_kabkot-kode_kabkot median_nilai median_nilai_verifikasi area_intervensi gap_median gap_mean mean_nilai mean_nilai_verifikasi
