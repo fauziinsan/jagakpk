@@ -99,6 +99,12 @@ gen govt_nilaisubindikator=bobot_subindikator*nilai/100 //The result is in pct
 gen govt_nilaiindikator=(bobot_indikator/100)*(govt_nilaisubindikator) //The result is in pct
 gen govt_areaintervensi=(bobot_area_intervensi/100)*(govt_nilaiindikator) //The result is in pct
 
+* median of all relevant variables
+sort nama_kabkot
+foreach i in nilai_subindikator nilai_indikator nilai_area nilai nilai_verifikasi govt_nilaisubindikator govt_nilaiindikator govt_areaintervensi {
+	by nama_kabkot: egen median_`i'=median(`i')
+	}
+	
 * mean of all relevant variables
 sort nama_kabkot
 foreach i in nilai_subindikator nilai_indikator nilai_area nilai nilai_verifikasi govt_nilaisubindikator govt_nilaiindikator govt_areaintervensi {
@@ -111,6 +117,14 @@ foreach i in nilai_area govt_areaintervensi {
 	}
 
 duplicates drop nama_kabkot, force
-drop dana_desa area_intervensi bobot_area_intervensi indikator bobot_indikator ///
+drop dana_desa  bobot_area_intervensi indikator bobot_indikator ///
 	sub_indikator bobot_subindikator nilai nilai_verifikasi tgl_lapor tgl_verif rk nilai_subindikator nilai_indikator ///
 	nilai_area govt_nilaisubindikator govt_nilaiindikator govt_areaintervensi
+
+* gen dummy target var
+gen gap_median=1 if median_nilai > median_nilai_verifikasi
+replace gap_median=0 if gap_median==.
+gen gap_mean=1 if mean_nilai > mean_nilai_verifikasi
+replace gap_mean=0 if gap_mean==.
+
+keep nama_kabkot-kode_kabkot median_nilai median_nilai_verifikasi area_intervensi gap_median gap_mean mean_nilai mean_nilai_verifikasi
