@@ -26,17 +26,17 @@ sub_data <- as_tibble(read_dta("data/build/output/cleaned-jaga-subindicatorlevel
 
 ##  DESCRIPTIVE ANALYSIS LETS GOW
 ##  1. Top 5 Provinces with the highest "gap cases" percentage
-top5prov_pctgap <- 
-  sub_data %>% group_by(nama_prov) %>%
+top10kabkot_pctgap <- 
+  sub_data %>% group_by(nama_kabkot) %>%
   summarize(pct_gap = mean(gap),
             case_gap = sum(gap))  %>%
   arrange(desc(pct_gap))          %>%
   mutate(rank = row_number())     %>%
-  filter(rank <= 5)               %>%
+  filter(rank <= 10)               %>%
   select(-rank)                 
 
 #   * export the data into csv
-top5prov_pctgap %>% write.csv("data/analysis/prov_pctgap.csv", row.names = TRUE)
+top10kabkot_pctgap %>% write.csv("data/analysis/kabkot10_pctgap.csv", row.names = TRUE)
 
 ##  2. Persentase kasus gap tertinggi di setiap area intervensi
 area_pctgap <- 
@@ -64,3 +64,12 @@ pajak_pctgapsub <-
             case_gap = sum(gap)) %>%
   arrange(desc(pct_gap))  ## This is more interesting?
                 
+##  4. Mean Differences antara self report dan verifikasi di tiap area intervensi
+area_data <- 
+  sub_data %>% group_by(area_intervensi) %>%
+  summarize(m_nilai = mean(nilai),
+            m_verif = mean(nilai_verifikasi)) %>%
+  mutate(mean_diff = m_verif - m_nilai) %>%
+  arrange(mean_diff)
+
+#   plot mean_differences by using t-test in each intervention area
